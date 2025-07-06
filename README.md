@@ -1,8 +1,17 @@
+<<<<<<< HEAD
 # 📰 Live News Sentiment Dashboard
 
 A real-time news sentiment analysis web application built with **Streamlit**, leveraging **GNews** and **New York Times** APIs to fetch headlines and visualize public sentiment with NLP techniques.
 
 ![App Screenshot](https://images.unsplash.com/photo-1522202176988-66273c2fd55f)
+=======
+
+# 📰 Live News Sentiment Dashboard
+
+A real-time news sentiment analysis web application built with **Streamlit**, leveraging **GNews** and **New York Times** APIs to fetch headlines and visualise public sentiment with NLP techniques.
+
+![App Screenshot](in the file)
+>>>>>>> 94bfcc522c9557f36be5b2289c2ab15cd28491f9
 
 ---
 
@@ -34,6 +43,7 @@ A real-time news sentiment analysis web application built with **Streamlit**, le
 This application implements a lightweight yet effective ETL (Extract, Transform, Load) pipeline to process live news data in real time:
 
 ✅ Extract
+<<<<<<< HEAD
 Fetches live news headlines from:
 
 GNews API (for India)
@@ -48,19 +58,37 @@ source
 
 publishedAt
 
+=======
+Fetches live news headlines from: GNews API (for India) and New York Times Top Stories API (for USA)
+
+Extracted fields:
+title
+source
+publishedAt
+>>>>>>> 94bfcc522c9557f36be5b2289c2ab15cd28491f9
 description (for NYT)
 
 🔁 Transform
 Cleans and filters raw news data to ensure format consistency.
 Applies sentiment analysis using TextBlob:
+<<<<<<< HEAD
 Calculates polarity score for each title.
 Classifies each headline as Positive, Negative, or Neutral.
 Prepares a structured Pandas DataFrame for visualization and export.
+=======
+Calculates the polarity score for each title.
+Classifies each headline as Positive, Negative, or Neutral.
+Prepares a structured Pandas DataFrame for visualisation and export.
+>>>>>>> 94bfcc522c9557f36be5b2289c2ab15cd28491f9
 
 📥 Load
 Loads the transformed data into:
 An interactive Streamlit interface for real-time display.
+<<<<<<< HEAD
 Pie chart using Plotly to visualize sentiment distribution.
+=======
+Pie chart using Plotly to visualise sentiment distribution.
+>>>>>>> 94bfcc522c9557f36be5b2289c2ab15cd28491f9
 PDF report using ReportLab containing:
 News headlines with sentiment labels
 Timestamped metadata
