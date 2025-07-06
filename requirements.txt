@@ -1,0 +1,6 @@
+streamlit
+pandas
+requests
+textblob
+plotly
+deep-translator
