@@ -3,7 +3,7 @@
 
 A real-time news sentiment analysis web application built with **Streamlit**, leveraging **GNews** and **New York Times** APIs to fetch headlines and visualise public sentiment with NLP techniques.
 
-![App Screenshot]("D:\live-news-dashboard\homepage.png")
+![App Screenshot](in the file)
 
 ---
 
