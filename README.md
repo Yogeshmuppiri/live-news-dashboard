@@ -45,17 +45,12 @@ This application implements a lightweight yet effective ETL (Extract, Transform,
 ✅ Extract
 <<<<<<< HEAD
 Fetches live news headlines from:
-
 GNews API (for India)
-
 New York Times Top Stories API (for USA)
 
 Extracted fields:
-
 title
-
 source
-
 publishedAt
 
 =======
