@@ -61,11 +61,11 @@ if "cached_news" not in st.session_state:
 def fetch_news(country, category):
     try:
         if country == "India":
-            # Guardian API - 'section' is optional and sometimes restrictive
             url = f"https://content.guardianapis.com/search?q={category}&api-key={guardian_key}"
             response = requests.get(url)
-            print("[Guardian API]", response.status_code, url)
-            print("Response:", response.text[:300])  # Partial response for debugging
+            if response.status_code != 200:
+                st.error("Guardian API failed.")
+                return None
             articles = response.json().get("response", {}).get("results", [])
             if not articles:
                 st.warning("Guardian API returned no articles.")
@@ -79,14 +79,14 @@ def fetch_news(country, category):
                 for article in articles
             ]
         else:
-            # NewsData.io API for USA
             url = f"https://newsdata.io/api/1/news?country=us&category={category}&language=en&apikey={newsdata_key}"
             response = requests.get(url)
-            print("[NewsData.io API]", response.status_code, url)
-            print("Response:", response.text[:300])
+            if response.status_code != 200:
+                st.error("NewsData.io API failed.")
+                return None
             articles = response.json().get("results", [])
             if not articles:
-                st.warning("NewsData.io API returned no articles.")
+                st.warning("NewsData.io returned no articles.")
                 return None
             news = [
                 {
