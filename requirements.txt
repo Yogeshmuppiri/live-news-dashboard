@@ -5,3 +5,6 @@ textblob
 plotly
 deep-translator
 reportlab
+matplotlib
+python-dotenv
+Pillow
