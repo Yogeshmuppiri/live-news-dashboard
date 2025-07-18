@@ -6,7 +6,6 @@ from datetime import datetime
 from PIL import Image
 from textblob import TextBlob
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet
 import matplotlib.pyplot as plt
@@ -62,10 +61,15 @@ if "cached_news" not in st.session_state:
 def fetch_news(country, category):
     try:
         if country == "India":
-            # Using Guardian API for Indian news
-            url = f"https://content.guardianapis.com/search?q={category}&section={category}&api-key={guardian_key}"
+            url = f"https://content.guardianapis.com/search?q={category}&api-key={guardian_key}"
             response = requests.get(url)
+            if response.status_code != 200:
+                st.error("Guardian API failed.")
+                return None
             articles = response.json().get("response", {}).get("results", [])
+            if not articles:
+                st.warning("Guardian API returned no articles.")
+                return None
             news = [
                 {
                     "title": article["webTitle"],
@@ -75,10 +79,15 @@ def fetch_news(country, category):
                 for article in articles
             ]
         else:
-            # Using NewsData.io API for US news
             url = f"https://newsdata.io/api/1/news?country=us&category={category}&language=en&apikey={newsdata_key}"
             response = requests.get(url)
+            if response.status_code != 200:
+                st.error("NewsData.io API failed.")
+                return None
             articles = response.json().get("results", [])
+            if not articles:
+                st.warning("NewsData.io returned no articles.")
+                return None
             news = [
                 {
                     "title": article["title"],
@@ -88,7 +97,8 @@ def fetch_news(country, category):
                 for article in articles
             ]
         return news
-    except:
+    except Exception as e:
+        st.error(f"API call failed: {e}")
         return None
 
 def analyze_sentiment(news):
