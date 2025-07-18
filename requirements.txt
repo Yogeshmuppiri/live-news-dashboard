@@ -4,3 +4,4 @@ requests
 textblob
 plotly
 deep-translator
+reportlab
