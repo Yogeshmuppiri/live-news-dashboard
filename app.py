@@ -6,7 +6,6 @@ from datetime import datetime
 from PIL import Image
 from textblob import TextBlob
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet
 import matplotlib.pyplot as plt
@@ -15,8 +14,8 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-gnews_key = os.getenv("GNEWS_API_KEY")
-nyt_key = os.getenv("NYT_API_KEY")
+guardian_key = os.getenv("GUARDIAN_API_KEY")
+newsdata_key = os.getenv("NEWSDATA_API_KEY")
 
 st.set_page_config(page_title="Live News Sentiment Dashboard", layout="wide")
 
@@ -62,30 +61,44 @@ if "cached_news" not in st.session_state:
 def fetch_news(country, category):
     try:
         if country == "India":
-            url = f"https://gnews.io/api/v4/top-headlines?lang=en&country=in&topic={category}&token={gnews_key}"
+            # Guardian API - 'section' is optional and sometimes restrictive
+            url = f"https://content.guardianapis.com/search?q={category}&api-key={guardian_key}"
+            response = requests.get(url)
+            print("[Guardian API]", response.status_code, url)
+            print("Response:", response.text[:300])  # Partial response for debugging
+            articles = response.json().get("response", {}).get("results", [])
+            if not articles:
+                st.warning("Guardian API returned no articles.")
+                return None
+            news = [
+                {
+                    "title": article["webTitle"],
+                    "source": "The Guardian",
+                    "publishedAt": article["webPublicationDate"]
+                }
+                for article in articles
+            ]
         else:
-            section = category if category != "general" else "home"
-            url = f"https://api.nytimes.com/svc/topstories/v2/{section}.json?api-key={nyt_key}"
-        response = requests.get(url)
-        articles = response.json().get("articles", []) if country == "India" else response.json().get("results", [])
-        if not articles:
-            return None
-        news = []
-        for article in articles:
-            if country == "India":
-                news.append({
+            # NewsData.io API for USA
+            url = f"https://newsdata.io/api/1/news?country=us&category={category}&language=en&apikey={newsdata_key}"
+            response = requests.get(url)
+            print("[NewsData.io API]", response.status_code, url)
+            print("Response:", response.text[:300])
+            articles = response.json().get("results", [])
+            if not articles:
+                st.warning("NewsData.io API returned no articles.")
+                return None
+            news = [
+                {
                     "title": article["title"],
-                    "source": article["source"]["name"] if article.get("source") else "",
-                    "publishedAt": article["publishedAt"]
-                })
-            else:
-                news.append({
-                    "title": article.get("title", ""),
-                    "source": "New York Times",
-                    "publishedAt": article.get("published_date", "")
-                })
+                    "source": article.get("source_id", "NewsData.io"),
+                    "publishedAt": article["pubDate"]
+                }
+                for article in articles
+            ]
         return news
-    except:
+    except Exception as e:
+        st.error(f"API call failed: {e}")
         return None
 
 def analyze_sentiment(news):
