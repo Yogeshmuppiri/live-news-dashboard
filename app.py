@@ -5,11 +5,10 @@ import plotly.express as px
 from datetime import datetime
 from PIL import Image
 from textblob import TextBlob
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.platypus import Image as RLImage
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet
-import matplotlib.pyplot as plt
 import os
 from dotenv import load_dotenv
 
@@ -51,7 +50,9 @@ st.markdown("#### Get real-time headlines and analyze sentiment of trending news
 # Sidebar UI
 st.sidebar.header("🟢 News Options")
 country = st.sidebar.selectbox("🌐 Select Country", ["USA", "India"])
-category = st.sidebar.selectbox("📂 Choose News Category", ["general", "business", "technology", "entertainment", "sports", "science", "health"])
+category = st.sidebar.selectbox("📂 Choose News Category", [
+    "general", "politics", "business", "technology", "entertainment", "sports", "science", "health"
+])
 if st.sidebar.button("🔄 Refresh News Now"):
     st.rerun()
 
@@ -62,10 +63,11 @@ if "cached_news" not in st.session_state:
 def fetch_news(country, category):
     try:
         if country == "India":
-            # Using Guardian API for Indian news
-            url = f"https://content.guardianapis.com/search?q={category}&section={category}&api-key={guardian_key}"
+            url = f"https://content.guardianapis.com/search?q={category}&api-key={guardian_key}"
             response = requests.get(url)
             articles = response.json().get("response", {}).get("results", [])
+            if not articles:
+                return None
             news = [
                 {
                     "title": article["webTitle"],
@@ -75,10 +77,11 @@ def fetch_news(country, category):
                 for article in articles
             ]
         else:
-            # Using NewsData.io API for US news
             url = f"https://newsdata.io/api/1/news?country=us&category={category}&language=en&apikey={newsdata_key}"
             response = requests.get(url)
             articles = response.json().get("results", [])
+            if not articles:
+                return None
             news = [
                 {
                     "title": article["title"],
@@ -88,7 +91,8 @@ def fetch_news(country, category):
                 for article in articles
             ]
         return news
-    except:
+    except Exception as e:
+        st.error(f"API call failed: {e}")
         return None
 
 def analyze_sentiment(news):
@@ -97,7 +101,7 @@ def analyze_sentiment(news):
         article["sentiment"] = round(blob.sentiment.polarity, 3)
     return news
 
-def generate_pdf(df, chart_path, filename="news_report.pdf"):
+def generate_pdf(df, filename="news_report.pdf"):
     doc = SimpleDocTemplate(filename, pagesize=letter)
     styles = getSampleStyleSheet()
     story = []
@@ -109,9 +113,6 @@ def generate_pdf(df, chart_path, filename="news_report.pdf"):
         story.append(Paragraph(f"<b>Title:</b> {row['title']}", styles["Normal"]))
         story.append(Paragraph(f"<b>Source:</b> {row['source']} | <b>Date:</b> {row['publishedAt']} | <b>Sentiment:</b> {row['sentiment']}", styles["Normal"]))
         story.append(Spacer(1, 12))
-
-    if os.path.exists(chart_path):
-        story.append(RLImage(chart_path, width=400, height=300))
 
     doc.build(story)
     return filename
@@ -153,13 +154,9 @@ fig = px.pie(sentiment_counts, values="Count", names="Sentiment", title="Headlin
              color_discrete_map={"Positive": "green", "Neutral": "gray", "Negative": "red"})
 st.plotly_chart(fig, use_container_width=True)
 
-# Save pie chart
-chart_file = "sentiment_chart.png"
-fig.write_image(chart_file)
-
-# PDF Download
+# PDF Download (Chart not embedded)
 if st.button("📥 Download PDF Report"):
     report_file = f"{country}_{category}_news_report.pdf"
-    pdf_path = generate_pdf(df, chart_file, filename=report_file)
+    pdf_path = generate_pdf(df, filename=report_file)
     with open(pdf_path, "rb") as f:
         st.download_button("⬇️ Download News PDF", f, file_name=report_file, mime="application/pdf")
