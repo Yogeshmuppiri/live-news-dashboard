@@ -41,7 +41,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # Title
-st.title("📰 Live News Headlines Sentiment Dashboard")
+st.title("📰 Top Live News Headlines")
 st.markdown("#### Get real-time headlines and analyze sentiment of trending news stories!")
 
 # Sidebar
