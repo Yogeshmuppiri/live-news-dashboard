@@ -5,10 +5,9 @@ import plotly.express as px
 from datetime import datetime
 from PIL import Image
 from textblob import TextBlob
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet
-import matplotlib.pyplot as plt
 import os
 from dotenv import load_dotenv
 
@@ -50,25 +49,24 @@ st.markdown("#### Get real-time headlines and analyze sentiment of trending news
 # Sidebar UI
 st.sidebar.header("🟢 News Options")
 country = st.sidebar.selectbox("🌐 Select Country", ["USA", "India"])
-category = st.sidebar.selectbox("📂 Choose News Category", ["general", "business", "technology", "entertainment", "sports", "science", "health"])
+category = st.sidebar.selectbox("📂 Choose News Category", [
+    "general", "politics", "business", "technology", "entertainment", "sports", "science", "health"
+])
 if st.sidebar.button("🔄 Refresh News Now"):
     st.rerun()
 
-# Session cache to hold last headlines
+# Cache state
 if "cached_news" not in st.session_state:
     st.session_state.cached_news = {}
 
+# Fetch news
 def fetch_news(country, category):
     try:
         if country == "India":
             url = f"https://content.guardianapis.com/search?q={category}&api-key={guardian_key}"
             response = requests.get(url)
-            if response.status_code != 200:
-                st.error("Guardian API failed.")
-                return None
             articles = response.json().get("response", {}).get("results", [])
             if not articles:
-                st.warning("Guardian API returned no articles.")
                 return None
             news = [
                 {
@@ -81,12 +79,8 @@ def fetch_news(country, category):
         else:
             url = f"https://newsdata.io/api/1/news?country=us&category={category}&language=en&apikey={newsdata_key}"
             response = requests.get(url)
-            if response.status_code != 200:
-                st.error("NewsData.io API failed.")
-                return None
             articles = response.json().get("results", [])
             if not articles:
-                st.warning("NewsData.io returned no articles.")
                 return None
             news = [
                 {
@@ -101,13 +95,15 @@ def fetch_news(country, category):
         st.error(f"API call failed: {e}")
         return None
 
+# Analyze sentiment
 def analyze_sentiment(news):
     for article in news:
         blob = TextBlob(article["title"])
         article["sentiment"] = round(blob.sentiment.polarity, 3)
     return news
 
-def generate_pdf(df, chart_path, filename="news_report.pdf"):
+# Generate PDF (without chart)
+def generate_pdf(df, filename="news_report.pdf"):
     doc = SimpleDocTemplate(filename, pagesize=letter)
     styles = getSampleStyleSheet()
     story = []
@@ -120,13 +116,10 @@ def generate_pdf(df, chart_path, filename="news_report.pdf"):
         story.append(Paragraph(f"<b>Source:</b> {row['source']} | <b>Date:</b> {row['publishedAt']} | <b>Sentiment:</b> {row['sentiment']}", styles["Normal"]))
         story.append(Spacer(1, 12))
 
-    if os.path.exists(chart_path):
-        story.append(RLImage(chart_path, width=400, height=300))
-
     doc.build(story)
     return filename
 
-# Load news or fallback
+# Load news
 cache_key = f"{country}_{category}"
 latest_news = fetch_news(country, category)
 
@@ -144,9 +137,11 @@ else:
 df = pd.DataFrame(news_data)
 df.sort_values("publishedAt", ascending=False, inplace=True)
 
+# Filter sources
 selected_sources = st.sidebar.multiselect("🧾 Filter by Source", options=df["source"].unique(), default=list(df["source"].unique()))
 df = df[df["source"].isin(selected_sources)]
 
+# Show headlines
 st.subheader("📰 Latest Headlines")
 for _, row in df.iterrows():
     with st.expander(row["title"]):
@@ -154,6 +149,7 @@ for _, row in df.iterrows():
         st.markdown(f"**📅 Published At:** {row['publishedAt']}")
         st.markdown(f"**💬 Sentiment Score:** `{row['sentiment']}`")
 
+# Sentiment chart
 st.subheader("📊 Sentiment Distribution")
 sentiment_labels = df["sentiment"].apply(lambda x: "Positive" if x > 0 else ("Negative" if x < 0 else "Neutral"))
 sentiment_counts = sentiment_labels.value_counts().reset_index()
@@ -163,13 +159,9 @@ fig = px.pie(sentiment_counts, values="Count", names="Sentiment", title="Headlin
              color_discrete_map={"Positive": "green", "Neutral": "gray", "Negative": "red"})
 st.plotly_chart(fig, use_container_width=True)
 
-# Save pie chart
-chart_file = "sentiment_chart.png"
-fig.write_image(chart_file)
-
-# PDF Download
+# PDF download
 if st.button("📥 Download PDF Report"):
     report_file = f"{country}_{category}_news_report.pdf"
-    pdf_path = generate_pdf(df, chart_file, filename=report_file)
+    pdf_path = generate_pdf(df, filename=report_file)
     with open(pdf_path, "rb") as f:
         st.download_button("⬇️ Download News PDF", f, file_name=report_file, mime="application/pdf")
